@@ -2,6 +2,7 @@ from item import Item
 
 class Inventory():
     def __init__(self):
+        """Item_class: item_name"""
         self.invent = {"Primary": None,
                       "Secondary": None,
                       "Hat": None,

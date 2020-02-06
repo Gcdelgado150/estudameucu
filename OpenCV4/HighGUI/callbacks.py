@@ -6,7 +6,7 @@ POSITIONING_VALUES = {"SQUIRTLE": [[208, 280], [194, 342]],
                       "CHAR": [[525, 615], [178, 343]]}
 
 def onMouse_event(event, x, y, p, q):
-#     print(event, x, y, p, q)
+    # print(event, x, y, p, q)
     if event == MOUSE_EVENT_TYPES[1]:
         # Maybe this can trigger contour find, to find what object did we clicked.
         if POSITIONING_VALUES["SQUIRTLE"][0][0] < x < POSITIONING_VALUES["SQUIRTLE"][0][1] and POSITIONING_VALUES["SQUIRTLE"][1][0] < y< POSITIONING_VALUES["SQUIRTLE"][1][1]:

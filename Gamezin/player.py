@@ -78,12 +78,19 @@ class Player():
     def _change_name(self, name):
         self.__name = name
 
+    def __check_if_equip_possible(self, i):
+        if isinstance(i, Item) and self.BAG._not_full():
+            return 1
+        else:
+            return 0
+
     def _grab_item(self, i):
         """Grab item from ground and add it to bag
+
         Args:
             i (item.class): the item found
         """
-        if isinstance(i, Item) and self.BAG._not_full():
+        if self.__check_if_equip_possible(i):
             self.BAG._add_an_item(self.BAG._get_first_slot(), i)
             i._change_status("Bag")
 

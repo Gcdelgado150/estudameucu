@@ -59,7 +59,7 @@ class Missions():
         print("[GAME] Find a weapon and choose one by clicking on it.")
         self.image = cv2.imread(self.__base_dir_images + "mission1.jpeg")
         self.resize_correctly()
-        
+
         cv2.namedWindow(self.__window_name)
         cv2.setMouseCallback(self.__window_name, self.click_and_crop)
 
