@@ -2,14 +2,14 @@ import numpy as np
 import pyscreenshot as ImageGrab
 import cv2
 import time
-import keyboard as kb
 import random
 import pickle
 import itertools
 import os
-from pynput.keyboard import Key
 import pyautogui
+import mss
 
+pyautogui.PAUSE = 0.01 # 100 clicks per second
 class Movements():
     def __init__(self):
         self.last = "right"
@@ -18,23 +18,21 @@ class Movements():
 
     def action(self, action):
         key = self.options[action]
-        print(key)
         if key == "right":
-            pyautogui.typewrite(['left', 'left'], self.speed)
+            pyautogui.typewrite(['left'], self.speed)
             self.last = "right"
         elif key == "left":
-            pyautogui.typewrite(['right', 'right'], self.speed)
+            pyautogui.typewrite(['right'], self.speed)
             self.last = "left"
         elif key == "any" and self.last == "left":
-            pyautogui.typewrite(['right', 'right'], self.speed)
+            pyautogui.typewrite(['right'], self.speed)
         elif key == "any" and self.last == "right":
-            pyautogui.typewrite(['left', 'left'], self.speed)
+            pyautogui.typewrite(['left'], self.speed)
 
-        # time.sleep(0.3)
+        time.sleep(1)
 
 def increase_vec(listA, vec):
     perm = itertools.permutations(listA)
-
     for i in list(perm):
         vec.append(i)
 
@@ -92,6 +90,28 @@ MAX_POINTS = 1000
 # Screenshot window
 X, Y, H, W = 2300, 95, 600, 655
 
+monitor_number = 1
+sct = mss.mss()
+mon = sct.monitors[monitor_number]
+
+monitor = {
+    "top": mon["top"] + 100,  # 100px from the top
+    "left": mon["left"] + 375,  # 100px from the left
+    "width": 600,
+    "height": 650,
+    "mon": monitor_number,
+}
+
+def screenshot(debug=False):
+    img = np.asarray(sct.grab(monitor))
+    if debug:
+        cv2.imshow("title", img)
+        cv2.waitKey(0)
+        if cv2.waitKey(25) & 0xFF == ord("q"):
+            cv2.destroyAllWindows()
+            return 0
+    return img
+
 def check_lost(img):
     """Check value for arrow as lost state"""
     return -LOST_PENALTY if img[318, 542] == 125 else DIDNT_LOST_REWARD
@@ -115,46 +135,53 @@ def get_state(img):
         pixel_left = img[leftX_coord, first_+grid*i]
         state.append(f_pixel(pixel_left))
 
-    return state
+    return tuple(state)
 
 def reset_env():
     playX = 318
     playY = 542
     pyautogui.moveTo(X+playX, Y+playY)
     pyautogui.click()
+    time.sleep(0.3)
 
+# TODO: REFACTOR PIXELS, BECAUSE WE CHANGE SCREENSHOT METHOD
 def game(EPSILON):
     q_table = get_q_table()
     episode_rewards = []
 
     for episode in range(TOTAL_EPISODES):
+        print("Running {}/{}".format(episode, TOTAL_EPISODES))
         episode_reward = 0
-        for i in range(MAX_POINTS):
-            printscreen = np.array(ImageGrab.grab(bbox=(X, Y, X+H, Y+W)))
-            img = cv2.cvtColor(printscreen, cv2.COLOR_RGB2GRAY)
-            if check_lost(img):
-                reset_env()
-                player.action(1) # Perform a right click at the start
+        img = cv2.cvtColor(screenshot(), cv2.COLOR_RGB2GRAY)
 
-            obs = tuple(get_state(img))
-            print("State before action: ".format(obs))
+        if check_lost(img):
+            reset_env()
+            player.action(1) # Perform a right click at the start
+
+        for i in range(MAX_POINTS):
+            img = cv2.cvtColor(screenshot(), cv2.COLOR_RGB2GRAY)
+            cv2.imwrite("screenshots/{}_antes.png".format(i), img)
+
+            obs = get_state(img)
+            print("State before action: {}".format(obs))
             if np.random.random() > EPSILON:
                 action = np.argmax(q_table[obs]) # GET THE ACTION
             else:
+                print("random move")
                 action = np.random.randint(0, 3)
             # Take the action!
             player.action(action)
 
-            printscreen = np.array(ImageGrab.grab(bbox=(X, Y, X+H, Y+W)))
-            img = cv2.cvtColor(printscreen, cv2.COLOR_RGB2GRAY)
+            img = cv2.cvtColor(screenshot(), cv2.COLOR_RGB2GRAY)
+            cv2.imwrite("screenshots/{}_depois.png".format(i), img)
             reward = check_lost(img)
 
-            new_obs = tuple(get_state(img))
-            print("State after action: ".format(obs))
+            new_obs = get_state(img)
+            print("State after action: {}".format(new_obs))
             max_future_q = np.max(q_table[new_obs])
             current_q = q_table[obs][action]
 
-            if reward == 2:
+            if reward == DIDNT_LOST_REWARD:
                 new_q = reward
             else:
                 new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
@@ -163,12 +190,14 @@ def game(EPSILON):
             q_table[obs][action] = new_q
 
             episode_reward += reward
+            print(reward)
             if reward == -LOST_PENALTY:
                 break
 
         if not check_lost(img):
             # If we havent lost, we have to wait for it to happens
             time.sleep(5)
+
         reset_env()
         episode_rewards.append(episode_reward)
         EPSILON *= EPS_DECAY
@@ -182,4 +211,24 @@ def game(EPSILON):
 
     save_q_table(q_table)
 
-game(EPSILON)
+try:
+    game(EPSILON)
+except KeyboardInterrupt:
+    exit()
+
+def test_verify():
+    while 1:
+        printscreen = np.array(ImageGrab.grab(bbox=(X, Y, X+H, Y+W)))
+        img = cv2.cvtColor(printscreen, cv2.COLOR_RGB2GRAY)
+
+        cv2.imshow("img", img)
+        cv2.moveWindow("img", 1300, 0)
+
+        k = cv2.waitKey(33)
+        if k == 113:
+            cv2.destroyAllWindows()
+            break
+
+# test_verify()
+
+# screenshot(True)
