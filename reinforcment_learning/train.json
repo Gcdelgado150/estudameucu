@@ -1,0 +1,34 @@
+{
+  "general": {
+    "EPSILON" : 0.8,
+    "EPS_DECAY" : 0.9998,
+    "LEARNING_RATE" : 0.1,
+    "DISCOUNT" : 0.95,
+    "N_ACTIONS" : 2,
+    "N_STATES" : 10,
+    "N_PREVIOUS_ACTIONS" : 4
+  },
+   
+  "tree_configs": {
+    "X": 173,
+    "Y": 5,
+    "VERTICAL_GRID" : 100,
+    "horizontal_size" : 100,
+    "vertical_size" : 40,
+    "SUM4TREE" : 4170
+  },
+    
+  "map_configs": {
+    "X" : 2300, 
+    "Y" : 95, 
+    "H" : 600, 
+    "W" : 655,
+    "LOSTY" : 537, 
+    "LOSTX" : 319
+  },
+    
+  "rewards": {
+    "MAX_REWARD" : 1,
+    "LOST_PUNISH_multipler": 2.2
+  }
+}
